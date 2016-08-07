@@ -2,35 +2,34 @@ FROM linuxserver/baseimage:latest
 
 #prepare workdir
 ENV WORKDIR /opt/otr
-RUN mkdir -p "${WORKDIR}/in" "${WORKDIR}/out" "${WORKDIR}/tmp" && \
-chmod -R 755 ${WORKDIR}
+RUN mkdir -p "${WORKDIR}/in" "${WORKDIR}/out" && \
+  chmod -R 755 ${WORKDIR}
 WORKDIR ${WORKDIR}
 ENV PATH $PATH:/"${WORKDIR}"
 
 # install otrtool
 RUN apt-get -q update && \
-apt-get install -qy build-essential libmcrypt-dev libcurl4-gnutls-dev && \
+apt-get install -qy build-essential \
+  libmcrypt-dev \
+  libcurl4-gnutls-dev && \
 mkdir -p /tmp/otrtool && \
 curl -L 'https://github.com/otrtool/otrtool/archive/master.tar.gz' | tar xvz -C /tmp/otrtool --strip-components=1 && \
 cd /tmp/otrtool && \
 make && \
 cp otrtool ${WORKDIR}
 
-# install multicutmkv
-RUN apt-get install -qy gawk bc mediainfo avidemux-cli && \
-curl -L 'https://raw.githubusercontent.com/Jonny007-MKD/multicutmkv/master/multicutmkv.sh' -o "${WORKDIR}/multicutmkv.sh" && \
-chmod 755 "${WORKDIR}/multicutmkv.sh"
-
-# install saneRenamix
-RUN apt-get install -qy wget && \
-curl -L 'https://raw.githubusercontent.com/Jonny007-MKD/OTR-SaneRename/master/saneRenamix.sh' -o "${WORKDIR}/saneRenamix.sh" && \
-chmod 755 "${WORKDIR}/saneRenamix.sh"
-
-# install otrDecodeAll
-COPY config/otrDecodeAll.config /opt/otr/config
-RUN curl -L 'https://raw.githubusercontent.com/Jonny007-MKD/OTR-DecodeAll/master/otrDecodeAll' -o "${WORKDIR}/otrDecodeAll.sh" && \
-chmod 755 "${WORKDIR}/otrDecodeAll.sh"
+# install multicut_light
+RUN apt-get install -qy bc wget dialog libav-tools avidemux-cli && \
+curl -L 'https://raw.githubusercontent.com/crushcoder/multicut_light/master/multicut_light_20100518.sh' -o "${WORKDIR}/multicut.sh" && \
+chmod 755 "${WORKDIR}/multicut.sh"
 
 # clean
 RUN apt-get clean && \
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# copy config, init and main script
+COPY otr-auto.sh ${WORKDIR}
+COPY config/ /tmp/otr-config
+COPY init/ /etc/my_init.d/
+COPY services/ /etc/service/
+RUN chmod -v +x /etc/service/*/run /etc/my_init.d/*.sh ${WORKDIR}/*.sh
