@@ -2,32 +2,42 @@
 umask 0002
 
 OTRTOOL="${WORKDIR}/otrtool"
-MUTLICUT="${WORKDIR}/multicut.sh"
-INPUTDIR="${WORKDIR}/in"
-UNCUTDIR="${INPUTDIR}/uncut"
+MUTLICUT="${WORKDIR}/multicutmkv.sh"
+INPUT_DIR="${WORKDIR}/in"
+TMP_DIR="${INPUT_DIR}/tmp"
+DECODED_DIR="${INPUT_DIR}/decoded"
+CUT_DIR="${INPUT_DIR}/cut"
 
-# Log message to stdout and log file
+# Log message to stdout
 log() {
   echo $1
 }
 
 init(){
-  if [ ! -d $UNCUTDIR ]
+  if [ ! -d $TMP_DIR ]
   then
-    mkdir $UNCUTDIR || (echo "can't create temp directory!" && exit 1)
+    mkdir $TMP_DIR || (echo "can't create temp directory!" && exit 1)
+  fi
+  if [ ! -d $DECODED_DIR ]
+  then
+    mkdir $DECODED_DIR || (echo "can't create decoded directory!" && exit 1)
+  fi
+  if [ ! -d $CUT_DIR ]
+  then
+    mkdir $CUT_DIR || (echo "can't create cut directory!" && exit 1)
   fi
 }
 
 decode(){
-  find "${INPUTDIR}" -type f -name "*.otrkey" | \
+  find "${INPUT_DIR}" -type f -name "*.otrkey" | \
   while read file
   do
     FILENAME=$(basename $file)
     DECODED_FILENAME="${FILENAME%.otrkey}"
-    if [ ! -f "$UNCUTDIR/$DECODED_FILENAME" ]
+    if [ ! -f "$DECODED_DIR/$DECODED_FILENAME" ]
     then
       log "decoding $FILENAME"
-      $OTRTOOL -x -e $OTR_USER -p $OTR_PWD -D $UNCUTDIR "$file"
+      $OTRTOOL -x -e $OTR_USER -p $OTR_PWD -D $DECODED_DIR "$file"
       SUCCESS=$?
       if [ "$SUCCESS" -eq 0 ]
       then
@@ -42,28 +52,33 @@ decode(){
 }
 
 cut(){
-  cd "$INPUTDIR" # need to do this for multicut :/
-  find . -type f -name "*.avi" | \
+  find "${DECODED_DIR}" -type f -name "*.avi" | \
   while read file
   do
     FILENAME=$(basename $file)
-    log "cutting: $FILENAME"
-    $MUTLICUT -auto -smart -remote "$file"
-    SUCCESS=$?
-    if [ "$SUCCESS" -eq 0 ]
+    if [ ! -f "$CUT_DIR/$FILENAME"* ]
     then
-      #rm "$file"
-      log "cutting successfull: $FILENAME"
+      log "cutting: $FILENAME"
+      $MUTLICUT -q -t $TMP_DIR -o $CUT_DIR "$file"
+      SUCCESS=$?
+      if [ "$SUCCESS" -eq 0 ]
+      then
+        #rm "$file"
+        log "cutting successfull: $FILENAME"
+      else
+        log "cutting failed: $FILENAME"
+      fi
     else
-      log "cutting failed: $FILENAME"
+      log "already cuted: $FILENAME"
     fi
   done
 }
 
 rename(){
-
+  log "rename"
 }
 
+cd $(dirname $0)
 while true
 do
   log "Start processing..."
@@ -71,6 +86,6 @@ do
   decode
   cut
   rename
-  
+
   sleep 600
 done

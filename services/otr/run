@@ -3,7 +3,7 @@
 echo "Starting OTR Script"
 if [ -z ${PUID+x} ]
 then
-  /sbin/setuser root ${WORKDIR}/otr-auto.sh
+  exec ${WORKDIR}/otr-auto.sh
 else
-  /sbin/setuser abc ${WORKDIR}/otr-auto.sh
+  exec /sbin/setuser abc ${WORKDIR}/otr-auto.sh
 fi

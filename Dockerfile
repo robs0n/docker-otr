@@ -9,7 +9,7 @@ ENV PATH $PATH:/"${WORKDIR}"
 
 # install otrtool
 RUN apt-get -q update && \
-apt-get install -qy build-essential \
+apt-get -qy install build-essential \
   libmcrypt-dev \
   libcurl4-gnutls-dev && \
 mkdir -p /tmp/otrtool && \
@@ -19,9 +19,55 @@ make && \
 cp otrtool ${WORKDIR}
 
 # install multicut_light
-RUN apt-get install -qy bc wget dialog libav-tools avidemux-cli && \
-curl -L 'https://raw.githubusercontent.com/crushcoder/multicut_light/master/multicut_light_20100518.sh' -o "${WORKDIR}/multicut.sh" && \
-chmod 755 "${WORKDIR}/multicut.sh"
+# RUN apt-get install -qy bc wget dialog libav-tools avidemux-cli && \
+# curl -L 'https://raw.githubusercontent.com/crushcoder/multicut_light/master/multicut_light_20100518.sh' -o "${WORKDIR}/multicut.sh" && \
+# chmod 755 "${WORKDIR}/multicut.sh"
+
+# install multicutmkv and dependencies
+COPY multicutmkv.sh ${WORKDIR}
+RUN apt-get -qy install \
+  gawk \
+  bc \
+  wget \
+  mediainfo \
+  realpath \
+  mkvtoolnix \
+  ffmsindex \
+  x264 \
+  build-essential \
+  checkinstall \
+  git \
+  pkg-config \
+  yasm \
+  autoconf \
+  automake \
+  libtool \
+  mplayer \
+  liblog4cpp5-dev \
+  liblog4cpp5 \
+  libcairo2-dev \
+  libpango1.0-dev \
+  libjpeg-dev \
+  libffms2-dev \
+  libavcodec-dev \
+  libavformat-dev \
+  libavutil-dev \
+  libpostproc-dev \
+  libswscale-dev && \
+  cd /tmp && git clone https://github.com/avxsynth/avxsynth.git && cd avxsynth/ && \
+  autoreconf -i && ./configure && make && make install
+
+#install filebot
+RUN mkdir /opt/java && \
+  curl -H "Cookie: oraclelicense=accept-securebackup-cookie" \
+  -L "http://download.oracle.com/otn-pub/java/jdk/8u102-b14/jre-8u102-linux-x64.tar.gz" | \
+  tar xvz -C /opt/java --strip-components=1 && \
+  update-alternatives --install "/usr/bin/java" "java" "/opt/java/bin/java" 1 && \
+  update-alternatives --install "/usr/bin/javaws" "javaws" "/opt/java/bin/javaws" 1 && \
+  update-alternatives --set "java" "/opt/java/bin/java" && \
+  update-alternatives --set "javaws" "/opt/java/bin/javaws" && \
+  curl -L "https://app.filebot.net/download.php?type=deb&arch=amd64&version=4.7.1" -o /tmp/filebot_4.7.1_amd64.deb && \
+  dpkg -i /tmp/filebot_4.7.1_amd64.deb
 
 # clean
 RUN apt-get clean && \
