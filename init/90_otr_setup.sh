@@ -7,6 +7,7 @@ then
   # chown files to running user
   if [ ! -z ${PUID+x} ]
   then
+    usermod -d "${WORKDIR}" abc
     find ${WORKDIR} ! \( -user abc -a -group abc \) \( -path ${WORKDIR}/in -o -path ${WORKDIR}/out \) -prune -o -print0 | xargs -0 chown abc:abc
   fi
   touch ${WORKDIR}/setup.lock
